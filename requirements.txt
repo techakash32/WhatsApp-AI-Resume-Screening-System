@@ -1,0 +1,39 @@
+# Google Drive
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# PDF extraction
+pdfplumber>=0.10.0
+PyMuPDF>=1.23.0
+
+# Word document extraction (.docx / .doc)
+python-docx>=1.1.0
+mammoth>=1.6.0
+
+# NLP extraction
+spacy>=3.7.0
+
+# Utilities
+pandas>=2.0.0
+click
+python-dotenv
+
+# Existing dependencies
+spacy
+google-auth
+google-auth-oauthlib
+google-api-python-client
+pdfplumber
+PyMuPDF
+python-docx
+mammoth
+
+# New dependencies for WhatsApp bot
+flask>=3.0
+requests>=2.31
+scikit-learn>=1.4
+numpy>=1.26
+reportlab>=4.1
+pyngrok>=7.1
