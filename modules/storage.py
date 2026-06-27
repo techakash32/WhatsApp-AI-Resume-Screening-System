@@ -1,20 +1,16 @@
 """
 Candidate data storage — appends rows to a CSV file.
 Creates the file with headers if it doesn't exist.
-
-Output columns:
-  name, email, phone, location, job_role, skills,
-  experience_years, experience_summary, education,
-  file_type, file_id, filename, extracted_at
 """
-
 import csv
 import os
+import re
 from datetime import datetime
 
 FIELDS = [
     "name", "email", "phone", "location", "job_role",
-    "skills", "experience_years", "experience_summary", "education",
+    "skills", "experience_years", "experience_summary",
+    "ug_education", "pg_education",
     "file_type", "file_id", "filename", "extracted_at",
 ]
 
@@ -32,13 +28,34 @@ class CandidateStore:
                 writer.writeheader()
 
     def save(self, candidate: dict):
+        # Clean newlines from all fields
+        for key in candidate:
+            if isinstance(candidate[key], str):
+                candidate[key] = candidate[key].replace("\n", " ").replace("\r", "").strip()
+
         candidate["extracted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Split experience into years + summary for cleaner columns
+        # Fix phone — handle scientific notation from Excel (e.g. 9.1862E+09)
+        if candidate.get("phone"):
+            phone = str(candidate["phone"]).strip()
+            try:
+                phone = str(int(float(phone)))
+            except (ValueError, OverflowError):
+                phone = re.sub(r"[^\d]", "", phone)
+            digits = re.sub(r"[^\d]", "", phone)
+            if len(digits) > 10:
+                digits = digits[-10:]
+            candidate["phone"] = f"\t{digits}"
+
+        # FIX: extractor returns combined 'experience' string — split into years + summary
         raw_exp = candidate.pop("experience", "") or ""
         years, summary = _split_experience(raw_exp)
         candidate.setdefault("experience_years", years)
         candidate.setdefault("experience_summary", summary)
+
+        # FIX: extractor returns ug_education / pg_education — pass through directly
+        candidate.setdefault("ug_education", "")
+        candidate.setdefault("pg_education", "")
 
         # Normalise skills: comma-separated, title-cased, sorted
         raw_skills = candidate.get("skills", "") or ""
@@ -55,15 +72,12 @@ class CandidateStore:
 
 
 def _split_experience(raw: str) -> tuple[str, str]:
-    """Split 'X years of experience; <details>' into (years, summary)."""
-    import re
     years = ""
     summary = raw
 
     years_match = re.search(r"(\d+\.?\d*)\s*years? of experience", raw, re.IGNORECASE)
     if years_match:
         years = years_match.group(1)
-        # Remove that part from the summary
         summary = raw.replace(years_match.group(0), "").strip("; ").strip()
 
     return years, summary
